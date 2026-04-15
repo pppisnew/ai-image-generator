@@ -5,7 +5,7 @@ interface UseGenerateImageReturn {
   imageUrl: string | null;
   isGenerating: boolean;
   error: string | null;
-  startGenerate: (prompt: string, size?: string) => void;
+  startGenerate: (prompt: string, size?: string) => Promise<{ id: string; base64: string } | null>;
   reset: () => void;
 }
 
@@ -25,7 +25,7 @@ export function useGenerateImage(): UseGenerateImageReturn {
     };
   }, []);
 
-  const startGenerate = useCallback(async (prompt: string, size: string = '1024x1024') => {
+  const startGenerate = useCallback(async (prompt: string, size: string = '1024x1024'): Promise<{ id: string; base64: string } | null> => {
     if (abortControllerRef.current) {
       abortControllerRef.current.abort();
     }
@@ -42,16 +42,18 @@ export function useGenerateImage(): UseGenerateImageReturn {
     abortControllerRef.current = new AbortController();
 
     try {
-      const imageURL = await generateImage({ prompt, size });
-      const blob = await fetchImageAsBlob(imageURL);
+      const result = await generateImage({ prompt, size });
+      const blob = await fetchImageAsBlob(result.url);
       const objectURL = blobToObjectURL(blob);
       objectURLRef.current = objectURL;
       setImageUrl(objectURL);
+      return { id: '', base64: result.base64 };
     } catch (err) {
       if (err instanceof Error && err.name === 'AbortError') {
-        return;
+        return null;
       }
       setError(err instanceof Error ? err.message : '生成失败');
+      return null;
     } finally {
       setIsGenerating(false);
     }

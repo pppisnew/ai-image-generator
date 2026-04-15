@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import Layout from './components/Layout';
 import Header from './components/Header';
 import HistorySidebar from './components/HistorySidebar';
@@ -9,7 +9,9 @@ import ImageDisplay from './features/generator/ImageDisplay';
 import ApiSettings from './components/ApiSettings';
 import { useOptimizePrompt } from './hooks/useOptimizePrompt';
 import { useGenerateImage } from './hooks/useGenerateImage';
+import { useHistory } from './hooks/useHistory';
 import { SIZE_OPTIONS } from './types/model';
+import type { HistoryMeta } from './types/model';
 
 function App() {
   const [prompt, setPrompt] = useState('');
@@ -19,6 +21,11 @@ function App() {
 
   const { optimizedText, isOptimizing, error, startOptimize, resetOptimize } = useOptimizePrompt();
   const { imageUrl, isGenerating, error: generateError, startGenerate } = useGenerateImage();
+  const { history, addHistory, deleteHistory, getImageBlobURL, loadHistory } = useHistory();
+
+  useEffect(() => {
+    loadHistory();
+  }, [loadHistory]);
 
   useEffect(() => {
     if (!isOptimizing && optimizedText) {
@@ -35,22 +42,56 @@ function App() {
     startOptimize(prompt);
   };
 
-  const handleGenerate = () => {
+  const handleGenerate = async () => {
     if (!prompt.trim()) {
       alert('请先输入图片描述');
       return;
     }
 
     const sizeValue = SIZE_OPTIONS.find(s => s.id === selectedSize)?.value || '1024x1024';
-    const finalPrompt = prompt;
+    const result = await startGenerate(prompt, sizeValue);
 
-    startGenerate(finalPrompt, sizeValue);
+    if (result) {
+      await addHistory(
+        {
+          prompt,
+          optimizedPrompt: optimizedText || undefined,
+          style: selectedStyle,
+          size: selectedSize,
+        },
+        result.base64
+      );
+    }
   };
+
+  const handleSelectHistory = useCallback(async (record: HistoryMeta) => {
+    setPrompt(record.prompt);
+    setSelectedSize(record.size);
+    setSelectedStyle(record.style);
+
+    const blobUrl = await getImageBlobURL(record.id);
+    if (blobUrl) {
+      const existingUrl = imageUrl;
+      if (existingUrl) {
+        URL.revokeObjectURL(existingUrl);
+      }
+    }
+  }, [imageUrl, getImageBlobURL]);
+
+  const handleDeleteHistory = useCallback(async (id: string) => {
+    await deleteHistory(id);
+  }, [deleteHistory]);
 
   const displayError = error || generateError;
 
   return (
-    <Layout sidebar={<HistorySidebar />}>
+    <Layout sidebar={
+      <HistorySidebar
+        history={history}
+        onSelect={handleSelectHistory}
+        onDelete={handleDeleteHistory}
+      />
+    }>
       <div className="w-full max-w-2xl">
         <Header onSettingsClick={() => setShowSettings(true)} />
         {displayError && (

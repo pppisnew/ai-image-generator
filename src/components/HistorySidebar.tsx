@@ -1,34 +1,13 @@
 import HistoryItem from './HistoryItem';
+import type { HistoryMeta } from '../types/model';
 
-interface HistoryRecord {
-  id: string;
-  prompt: string;
-  style: string;
-  createdAt: number;
+interface HistorySidebarProps {
+  history: HistoryMeta[];
+  onSelect: (record: HistoryMeta) => void;
+  onDelete: (id: string) => void;
 }
 
-const mockHistory: HistoryRecord[] = [
-  {
-    id: '1',
-    prompt: '一只戴着墨镜的柴犬，坐在夏威夷海滩上，4K高清，电影级光影',
-    style: '真实摄影',
-    createdAt: Date.now() - 3600000,
-  },
-  {
-    id: '2',
-    prompt: '未来城市夜景，霓虹灯光，赛博朋克风格，高楼林立',
-    style: '赛博朋克',
-    createdAt: Date.now() - 7200000,
-  },
-  {
-    id: '3',
-    prompt: '中国水墨山水画，烟雾缭绕的山峰，古风意境',
-    style: '水墨国风',
-    createdAt: Date.now() - 86400000,
-  },
-];
-
-const HistorySidebar: React.FC = () => {
+const HistorySidebar: React.FC<HistorySidebarProps> = ({ history, onSelect, onDelete }) => {
   return (
     <div className="flex flex-col h-full">
       <div className="p-4 border-b border-gray-800 flex items-center justify-between">
@@ -42,9 +21,20 @@ const HistorySidebar: React.FC = () => {
         </button>
       </div>
       <div className="flex-1 overflow-y-auto p-2 space-y-2">
-        {mockHistory.map((record) => (
-          <HistoryItem key={record.id} record={record} />
-        ))}
+        {history.length === 0 ? (
+          <div className="text-center text-gray-500 py-8 text-sm">
+            暂无历史记录
+          </div>
+        ) : (
+          history.map((record) => (
+            <HistoryItem
+              key={record.id}
+              record={record}
+              onSelect={onSelect}
+              onDelete={onDelete}
+            />
+          ))
+        )}
       </div>
     </div>
   );

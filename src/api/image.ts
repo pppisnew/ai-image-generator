@@ -2,10 +2,15 @@ import type { CogViewRequest, CogViewResponse } from '../types/api';
 
 const IMAGE_API_URL = '/api/zhipu/images/generations';
 
+export interface GenerateImageResult {
+  url: string;
+  base64: string;
+}
+
 export async function generateImage(params: {
   prompt: string;
   size?: string;
-}): Promise<string> {
+}): Promise<GenerateImageResult> {
   const apiKey = localStorage.getItem('zhipu_api_key');
   if (!apiKey) {
     throw new Error('请先设置 API Key');
@@ -34,11 +39,27 @@ export async function generateImage(params: {
   const data = await response.json() as CogViewResponse;
 
   if (data.data?.[0]?.base64) {
-    return `data:image/png;base64,${data.data[0].base64}`;
+    return {
+      url: `data:image/png;base64,${data.data[0].base64}`,
+      base64: data.data[0].base64,
+    };
   }
 
   if (data.data?.[0]?.url) {
-    return data.data[0].url;
+    const imageUrl = data.data[0].url;
+    const proxyUrl = `/api/proxy-image?url=${encodeURIComponent(imageUrl)}`;
+    const imageResponse = await fetch(proxyUrl);
+    if (!imageResponse.ok) {
+      throw new Error('图片加载失败');
+    }
+    const blob = await imageResponse.arrayBuffer();
+    const base64 = btoa(
+      new Uint8Array(blob).reduce((data, byte) => data + String.fromCharCode(byte), '')
+    );
+    return {
+      url: `data:image/png;base64,${base64}`,
+      base64,
+    };
   }
 
   throw new Error('未获取到图片数据');
