@@ -1,4 +1,5 @@
 import type { HistoryMeta } from '../types/model';
+import { useThumbnail } from '../hooks/useThumbnail';
 
 interface HistoryItemProps {
   record: HistoryMeta;
@@ -25,6 +26,8 @@ const STYLE_ICONS: Record<string, string> = {
 };
 
 const HistoryItem: React.FC<HistoryItemProps> = ({ record, onSelect, onDelete }) => {
+  const { thumbnailUrl, isLoading } = useThumbnail(record.id);
+
   const formatTime = (timestamp: number) => {
     const diff = Date.now() - timestamp;
     if (diff < 3600000) return `${Math.floor(diff / 60000)} 分钟前`;
@@ -47,15 +50,27 @@ const HistoryItem: React.FC<HistoryItemProps> = ({ record, onSelect, onDelete })
     >
       <button
         onClick={handleDelete}
-        className="absolute top-2 right-2 p-1.5 rounded bg-red-500/80 hover:bg-red-500 text-white opacity-0 group-hover:opacity-100 transition-opacity"
+        className="absolute top-2 right-2 p-1.5 rounded bg-red-500/80 hover:bg-red-500 text-white opacity-0 group-hover:opacity-100 transition-opacity z-10"
         title="删除"
       >
         <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
         </svg>
       </button>
-      <div className={`aspect-square mb-2 rounded bg-gradient-to-br ${colorClass} flex items-center justify-center`}>
-        <span className="text-3xl">{icon}</span>
+      <div className="aspect-square mb-2 rounded bg-gradient-to-br overflow-hidden flex items-center justify-center">
+        {isLoading ? (
+          <div className="w-full h-full bg-gray-700/50 animate-pulse" />
+        ) : thumbnailUrl ? (
+          <img
+            src={thumbnailUrl}
+            alt=""
+            className="w-full h-full object-cover"
+          />
+        ) : (
+          <div className={`w-full h-full bg-gradient-to-br ${colorClass} flex items-center justify-center`}>
+            <span className="text-3xl">{icon}</span>
+          </div>
+        )}
       </div>
       <p className="text-xs text-gray-300 line-clamp-2 mb-1">{record.prompt}</p>
       <div className="flex items-center justify-between text-xs text-gray-500">

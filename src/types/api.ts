@@ -1,5 +1,5 @@
 export interface CogViewRequest {
-  model: 'cogview-3-plus';
+  model: 'cogview-4';
   prompt: string;
   size?: '1024x1024' | '768x768' | '512x512' | '1920x1080' | '1080x1920' | '1024x768' | '768x1024';
 }

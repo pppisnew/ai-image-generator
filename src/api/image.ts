@@ -7,17 +7,20 @@ export interface GenerateImageResult {
   base64: string;
 }
 
-export async function generateImage(params: {
-  prompt: string;
-  size?: string;
-}): Promise<GenerateImageResult> {
+export async function generateImage(
+  params: {
+    prompt: string;
+    size?: string;
+  },
+  signal?: AbortSignal
+): Promise<GenerateImageResult> {
   const apiKey = localStorage.getItem('zhipu_api_key');
   if (!apiKey) {
     throw new Error('请先设置 API Key');
   }
 
   const requestData: CogViewRequest = {
-    model: 'cogview-3-plus',
+    model: 'cogview-4',
     prompt: params.prompt,
     size: params.size as CogViewRequest['size'] || '1024x1024',
   };
@@ -29,6 +32,7 @@ export async function generateImage(params: {
       'Authorization': `Bearer ${apiKey}`,
     },
     body: JSON.stringify(requestData),
+    signal,
   });
 
   if (!response.ok) {
@@ -48,7 +52,7 @@ export async function generateImage(params: {
   if (data.data?.[0]?.url) {
     const imageUrl = data.data[0].url;
     const proxyUrl = `/api/proxy-image?url=${encodeURIComponent(imageUrl)}`;
-    const imageResponse = await fetch(proxyUrl);
+    const imageResponse = await fetch(proxyUrl, { signal });
     if (!imageResponse.ok) {
       throw new Error('图片加载失败');
     }
@@ -65,7 +69,10 @@ export async function generateImage(params: {
   throw new Error('未获取到图片数据');
 }
 
-export async function fetchImageAsBlob(url: string): Promise<Blob> {
+export async function fetchImageAsBlob(
+  url: string,
+  signal?: AbortSignal
+): Promise<Blob> {
   if (url.startsWith('data:')) {
     const base64 = url.split(',')[1];
     const binary = atob(base64);
@@ -77,7 +84,7 @@ export async function fetchImageAsBlob(url: string): Promise<Blob> {
   }
 
   const proxyUrl = `/api/proxy-image?url=${encodeURIComponent(url)}`;
-  const response = await fetch(proxyUrl);
+  const response = await fetch(proxyUrl, { signal });
   if (!response.ok) {
     throw new Error('图片加载失败');
   }

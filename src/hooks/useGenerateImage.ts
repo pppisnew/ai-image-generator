@@ -6,6 +6,7 @@ interface UseGenerateImageReturn {
   isGenerating: boolean;
   error: string | null;
   startGenerate: (prompt: string, size?: string) => Promise<{ id: string; base64: string } | null>;
+  cancelGenerate: () => void;
   reset: () => void;
 }
 
@@ -21,6 +22,9 @@ export function useGenerateImage(): UseGenerateImageReturn {
       if (objectURLRef.current) {
         revokeObjectURL(objectURLRef.current);
         objectURLRef.current = null;
+      }
+      if (abortControllerRef.current) {
+        abortControllerRef.current.abort();
       }
     };
   }, []);
@@ -40,10 +44,11 @@ export function useGenerateImage(): UseGenerateImageReturn {
     setError(null);
 
     abortControllerRef.current = new AbortController();
+    const { signal } = abortControllerRef.current;
 
     try {
-      const result = await generateImage({ prompt, size });
-      const blob = await fetchImageAsBlob(result.url);
+      const result = await generateImage({ prompt, size }, signal);
+      const blob = await fetchImageAsBlob(result.url, signal);
       const objectURL = blobToObjectURL(blob);
       objectURLRef.current = objectURL;
       setImageUrl(objectURL);
@@ -57,6 +62,20 @@ export function useGenerateImage(): UseGenerateImageReturn {
     } finally {
       setIsGenerating(false);
     }
+  }, []);
+
+  const cancelGenerate = useCallback(() => {
+    if (abortControllerRef.current) {
+      abortControllerRef.current.abort();
+      abortControllerRef.current = null;
+    }
+    if (objectURLRef.current) {
+      revokeObjectURL(objectURLRef.current);
+      objectURLRef.current = null;
+    }
+    setImageUrl(null);
+    setIsGenerating(false);
+    setError(null);
   }, []);
 
   const reset = useCallback(() => {
@@ -73,6 +92,7 @@ export function useGenerateImage(): UseGenerateImageReturn {
     isGenerating,
     error,
     startGenerate,
+    cancelGenerate,
     reset,
   };
 }

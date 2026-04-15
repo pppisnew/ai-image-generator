@@ -18,10 +18,11 @@ function App() {
   const [selectedSize, setSelectedSize] = useState<string>('1:1');
   const [selectedStyle, setSelectedStyle] = useState<string>('realistic');
   const [showSettings, setShowSettings] = useState(false);
+  const [displayError, setDisplayError] = useState<string | null>(null);
 
   const { optimizedText, isOptimizing, error, startOptimize, resetOptimize } = useOptimizePrompt();
-  const { imageUrl, isGenerating, error: generateError, startGenerate } = useGenerateImage();
-  const { history, addHistory, deleteHistory, getImageBlobURL, loadHistory } = useHistory();
+  const { imageUrl, isGenerating, error: generateError, startGenerate, cancelGenerate } = useGenerateImage();
+  const { history, addHistory, deleteHistory, getImageBlobURL, loadHistory, revokeCurrentImage } = useHistory();
 
   useEffect(() => {
     loadHistory();
@@ -34,9 +35,23 @@ function App() {
     }
   }, [isOptimizing, optimizedText, resetOptimize]);
 
+  useEffect(() => {
+    const err = error || generateError;
+    if (err) {
+      setDisplayError(err);
+      const timer = setTimeout(() => {
+        setDisplayError(null);
+      }, 5000);
+      return () => clearTimeout(timer);
+    } else {
+      setDisplayError(null);
+    }
+  }, [error, generateError]);
+
   const handleOptimize = () => {
     if (!prompt.trim()) {
-      alert('请先输入图片描述');
+      setDisplayError('请先输入图片描述');
+      setTimeout(() => setDisplayError(null), 3000);
       return;
     }
     startOptimize(prompt);
@@ -44,7 +59,8 @@ function App() {
 
   const handleGenerate = async () => {
     if (!prompt.trim()) {
-      alert('请先输入图片描述');
+      setDisplayError('请先输入图片描述');
+      setTimeout(() => setDisplayError(null), 3000);
       return;
     }
 
@@ -65,24 +81,20 @@ function App() {
   };
 
   const handleSelectHistory = useCallback(async (record: HistoryMeta) => {
+    revokeCurrentImage();
     setPrompt(record.prompt);
     setSelectedSize(record.size);
     setSelectedStyle(record.style);
 
     const blobUrl = await getImageBlobURL(record.id);
     if (blobUrl) {
-      const existingUrl = imageUrl;
-      if (existingUrl) {
-        URL.revokeObjectURL(existingUrl);
-      }
+      // Image is now displayed via getImageBlobURL's internal management
     }
-  }, [imageUrl, getImageBlobURL]);
+  }, [getImageBlobURL, revokeCurrentImage]);
 
   const handleDeleteHistory = useCallback(async (id: string) => {
     await deleteHistory(id);
   }, [deleteHistory]);
-
-  const displayError = error || generateError;
 
   return (
     <Layout sidebar={
@@ -95,12 +107,17 @@ function App() {
       <div className="w-full max-w-2xl">
         <Header onSettingsClick={() => setShowSettings(true)} />
         {displayError && (
-          <div className="mb-4 p-3 rounded-lg bg-red-500/20 border border-red-500/50 text-red-400 text-sm">
+          <div className="mb-4 p-3 rounded-lg bg-red-500/20 border border-red-500/50 text-red-400 text-sm animate-pulse">
             {displayError}
           </div>
         )}
         <div className="space-y-8">
-          <ImageDisplay imageUrl={imageUrl} isGenerating={isGenerating} />
+          <ImageDisplay
+            imageUrl={imageUrl}
+            isGenerating={isGenerating}
+            prompt={prompt}
+            onCancel={cancelGenerate}
+          />
           <PromptInput
             value={prompt}
             onChange={setPrompt}
