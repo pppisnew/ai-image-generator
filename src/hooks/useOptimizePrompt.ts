@@ -6,7 +6,7 @@ interface UseOptimizePromptReturn {
   isOptimizing: boolean;
   error: string | null;
   startOptimize: (prompt: string) => void;
-  reset: () => void;
+  resetOptimize: () => void;
 }
 
 export function useOptimizePrompt(): UseOptimizePromptReturn {
@@ -41,7 +41,7 @@ export function useOptimizePrompt(): UseOptimizePromptReturn {
     });
   }, []);
 
-  const reset = useCallback(() => {
+  const resetOptimize = useCallback(() => {
     setOptimizedText('');
     setError(null);
   }, []);
@@ -51,6 +51,6 @@ export function useOptimizePrompt(): UseOptimizePromptReturn {
     isOptimizing,
     error,
     startOptimize,
-    reset,
+    resetOptimize,
   };
 }

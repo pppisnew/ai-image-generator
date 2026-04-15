@@ -1,4 +1,34 @@
-const ImageDisplay: React.FC = () => {
+interface ImageDisplayProps {
+  imageUrl: string | null;
+  isGenerating?: boolean;
+}
+
+const ImageDisplay: React.FC<ImageDisplayProps> = ({ imageUrl, isGenerating = false }) => {
+  if (isGenerating) {
+    return (
+      <div className="w-full max-w-2xl aspect-square rounded-xl bg-dark-card border border-gray-700 flex flex-col items-center justify-center">
+        <div className="relative w-16 h-16 mb-4">
+          <div className="absolute inset-0 rounded-full border-4 border-primary/30"></div>
+          <div className="absolute inset-0 rounded-full border-4 border-primary border-t-transparent animate-spin"></div>
+        </div>
+        <p className="text-gray-400">正在生成中...</p>
+        <p className="text-sm text-gray-500 mt-1">请稍候，这可能需要一些时间</p>
+      </div>
+    );
+  }
+
+  if (imageUrl) {
+    return (
+      <div className="w-full max-w-2xl rounded-xl overflow-hidden bg-dark-card border border-gray-700 flex items-center justify-center">
+        <img
+          src={imageUrl}
+          alt="生成结果"
+          className="max-w-full max-h-[512px] object-contain rounded-lg shadow-lg"
+        />
+      </div>
+    );
+  }
+
   return (
     <div className="w-full max-w-2xl aspect-square rounded-xl border-2 border-dashed border-gray-700 flex flex-col items-center justify-center text-gray-500">
       <svg

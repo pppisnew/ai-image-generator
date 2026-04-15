@@ -1,14 +1,13 @@
 export interface CogViewRequest {
   model: 'cogview-3-plus';
   prompt: string;
-  size?: '1024x1024' | '768x768' | '512x512';
-  n?: 1 | 2 | 3 | 4;
+  size?: '1024x1024' | '768x768' | '512x512' | '1920x1080' | '1080x1920' | '1024x768' | '768x1024';
 }
 
 export interface CogViewResponse {
   created: number;
   data: Array<{
-    url: string;
+    url?: string;
     base64?: string;
   }>;
   request_id?: string;

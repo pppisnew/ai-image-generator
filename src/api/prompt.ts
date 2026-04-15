@@ -1,6 +1,6 @@
 import { API_KEY_STORAGE_KEY } from '../types/model';
 
-const ZHIPU_API_URL = 'https://open.bigmodel.cn/api/paas/v4/chat/completions';
+const ZHIPU_API_URL = '/api/zhipu/chat/completions';
 
 export interface StreamCallbacks {
   onChunk: (text: string) => void;
